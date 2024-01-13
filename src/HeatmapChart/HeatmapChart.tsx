@@ -1,3 +1,4 @@
+import * as esPkg from "essentia.js";
 import React, { useEffect } from "react";
 import {
   HeatmapColorMap,
@@ -6,81 +7,106 @@ import {
   NonUniformHeatmapRenderableSeries,
   NumericAxis,
   SciChartSurface,
+  UniformHeatmapDataSeries,
+  UniformHeatmapRenderableSeries,
   ZoomExtentsModifier,
   ZoomPanModifier,
 } from "scichart";
 
+// import * as esPkg from "essentia.js";
+
 const HeatmapChart: React.FC = () => {
-  useEffect(() => {
-    const runSciChart = async () => {
-      const { wasmContext, sciChartSurface } = await SciChartSurface.create(
-        "scichart-root"
-      );
+  const a = async () => {
+    console.log(esPkg);
+    const essentia = new esPkg.Essentia(esPkg.EssentiaWASM.EssentiaWASM);
 
-      const lengthOnX = 28125;
-      const lengthOnY = 1025;
+    const response = await fetch("/audio.mp3");
+    const arrayBuffer = await response.arrayBuffer();
 
-      sciChartSurface.xAxes.add(new NumericAxis(wasmContext));
-      sciChartSurface.yAxes.add(new NumericAxis(wasmContext));
+    // Decode the audio file
+    const audioContext = new (window.AudioContext ||
+      window.webkitAudioContext)();
+    const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
 
-      const heatmapData = generateHeatmapData(lengthOnX, lengthOnY); // 8 columns, 5 rows
-      const xRangeOffsetsSource: number[] = [];
-      for (let i = 0; i <= heatmapData[0].length; i++) {
-        xRangeOffsetsSource.push((i * lengthOnX) / 4096);
-      }
-      const yRangeOffsetsSource: number[] = Array(heatmapData.length + 1)
-        .fill(0)
-        .map((_, i) => i);
+    let audioVector = essentia.arrayToVector(audioBuffer.getChannelData(0));
 
-      const heatmapSeries = new NonUniformHeatmapRenderableSeries(wasmContext, {
-        dataSeries: new NonUniformHeatmapDataSeries(wasmContext, {
-          // 2d zValues array. Dimensions [height][width]
-          zValues: heatmapData,
-          // xStart, xStep, yStart, yStep defines the x,y position
-          xCellOffsets: xRangeOffsetsSource,
-          yCellOffsets: yRangeOffsetsSource,
-        }),
+    const extractor = new esPkg.EssentiaExtractor(
+      esPkg.EssentiaWASM.EssentiaWASM
+    );
 
-        colorMap: new HeatmapColorMap({
-          minimum: 0,
-          maximum: 100,
-          gradientStops: [
-            { offset: 1, color: "#EC0F6C" },
-            { offset: 0.9, color: "#F48420" },
-            { offset: 0.7, color: "#DC7969" },
-            { offset: 0.5, color: "#67BDAF" },
-            { offset: 0.3, color: "#50C7E0" },
-            { offset: 0.2, color: "#264B93" },
-            { offset: 0, color: "#14233C" },
-          ],
-        }),
-      });
+    const spectrum = essentia.Spectrum(audioVector, 8192);
+    console.log(spectrum);
 
-      sciChartSurface.renderableSeries.add(heatmapSeries);
-      sciChartSurface.chartModifiers.add(
-        new ZoomPanModifier(),
-        new MouseWheelZoomModifier(),
-        new ZoomExtentsModifier()
-      );
-    };
+    // console.log(melSpectrum);
 
-    runSciChart();
-  }, []);
+    // const spectralExtractor = new essentia.MelSpectrumExtractor();
 
+    // let melSpectrum = spectralExtractor.compute(audioVector);
+  };
+
+  // useEffect(() => {
+  //   const runSciChart = async () => {
+  //     const audioLoader = new Essentia(EssentiaWASM);
+
+  //     const { wasmContext, sciChartSurface } = await SciChartSurface.create(
+  //       "scichart-root"
+  //     );
+
+  //     sciChartSurface.xAxes.add(new NumericAxis(wasmContext));
+  //     sciChartSurface.yAxes.add(new NumericAxis(wasmContext));
+
+  //     const heatmapData = [
+  //       [1, 2, 3, 4],
+  //       [4, 3, 2, 1],
+  //       [1, 2, 3, 4],
+  //     ]; // 8 columns, 5 rows
+
+  //     const heatmapSeries = new UniformHeatmapRenderableSeries(wasmContext, {
+  //       dataSeries: new UniformHeatmapDataSeries(wasmContext, {
+  //         // 2d zValues array. Dimensions [height][width]
+  //         zValues: heatmapData,
+  //         // xStart, xStep, yStart, yStep defines the x,y position
+  //         xStart: 0,
+  //         xStep: 1,
+  //         yStart: 0,
+  //         yStep: 1,
+  //       }),
+
+  //       colorMap: new HeatmapColorMap({
+  //         minimum: 0,
+  //         maximum: 4,
+  //         gradientStops: [
+  //           { offset: 1, color: "#EC0F6C" },
+  //           { offset: 0.9, color: "#F48420" },
+  //           { offset: 0.7, color: "#DC7969" },
+  //           { offset: 0.5, color: "#67BDAF" },
+  //           { offset: 0.3, color: "#50C7E0" },
+  //           { offset: 0.2, color: "#264B93" },
+  //           { offset: 0, color: "#14233C" },
+  //         ],
+  //       }),
+  //     });
+
+  //     sciChartSurface.renderableSeries.add(heatmapSeries);
+  //     sciChartSurface.chartModifiers.add(
+  //       new ZoomPanModifier(),
+  //       new MouseWheelZoomModifier(),
+  //       new ZoomExtentsModifier()
+  //     );
+  //   };
+
+  //   runSciChart();
+  // }, []);
+
+  // useEffect(() => {
+  //   const essentia = new Essentia(Essentia.EssentiaWASM);
+  // }, []);
   return (
-    <div id="scichart-root" style={{ width: "800px", height: "300px" }}></div>
+    <>
+      <button onClick={a}>aaaa</button>
+      <div id="scichart-root" style={{ width: "800px", height: "300px" }}></div>
+    </>
   );
 };
-
-function generateHeatmapData(width: number, height: number): number[][] {
-  const zValues: number[][] = new Array(height);
-  for (let y = 0; y < height; y++) {
-    zValues[y] = new Array(width);
-    for (let x = 0; x < width; x++) {
-      zValues[y][x] = Math.random() * 100; // Random data
-    }
-  }
-  return zValues;
-}
 
 export default HeatmapChart;
